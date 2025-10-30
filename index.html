@@ -1,0 +1,372 @@
+<!doctype html>
+<html lang="bn">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SecretGPT</title>
+<style>
+:root {
+  --brand: #00A8FF;
+  --accent: #0066FF;
+  --bg: #000000;
+  --card: #111111;
+  --border: #222;
+  --text: #e0e0e0;
+  --muted: #888;
+}
+
+body {
+  font-family: "Noto Sans Bengali", system-ui, sans-serif;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 20px;
+}
+
+.container {
+  width: 100%;
+  max-width: 900px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 25px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.6);
+  transition: all 0.3s ease;
+}
+
+h1 {
+  font-size: 1.8rem;
+  text-align: center;
+  background: linear-gradient(90deg, var(--brand), var(--accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.muted {
+  color: var(--muted);
+  font-size: 0.95rem;
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+label {
+  font-weight: 500;
+  margin-top: 14px;
+  display: block;
+  color: #bbb;
+}
+
+textarea, input[type="text"], input[type="password"] {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 0.95rem;
+  outline: none;
+  background: #0b0b0b;
+  color: var(--text);
+  transition: 0.2s;
+}
+
+textarea:focus, input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 6px var(--accent);
+}
+
+textarea {
+  height: 160px;
+  resize: vertical;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+  justify-content: center;
+}
+
+button {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent), var(--brand));
+  transition: all 0.3s ease;
+}
+
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 12px var(--brand);
+}
+
+button.small {
+  background: transparent;
+  color: var(--brand);
+  border: 1px solid var(--brand);
+}
+
+button.small:hover {
+  background: var(--brand);
+  color: #fff;
+}
+
+.linkbox {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 14px;
+}
+
+#sharelink {
+  min-width: 260px;
+  flex: 1;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: #0b0b0b;
+  color: var(--text);
+  padding: 8px;
+}
+
+pre {
+  white-space: pre-wrap;
+  background: #0b0b0b;
+  border: 1px solid var(--border);
+  padding: 12px;
+  border-radius: 10px;
+  margin-top: 14px;
+  font-size: 0.92rem;
+  color: #bfc9ff;
+  max-height: 250px;
+  overflow-y: auto;
+  box-shadow: inset 0 0 10px rgba(0, 0, 255, 0.2);
+}
+
+pre::-webkit-scrollbar {
+  width: 6px;
+}
+pre::-webkit-scrollbar-thumb {
+  background: var(--brand);
+  border-radius: 4px;
+}
+
+footer {
+  margin-top: 25px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+footer strong {
+  color: var(--brand);
+}
+
+@media (max-width: 600px) {
+  .container {
+    padding: 15px;
+  }
+  h1 {
+    font-size: 1.5rem;
+  }
+  textarea {
+    height: 140px;
+  }
+}
+</style>
+
+<!-- Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lz-string/1.4.4/lz-string.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+<div class="container">
+  <h1>SecretGPT</h1>
+  <div class="muted">আপনার ChatGPT কনভারসেশন পেস্ট করুন, চাইলে পাসওয়ার্ড দিন, তারপর “Create share link” এ ক্লিক করুন।</div>
+
+  <label>লিংকের শিরোনাম (ঐচ্ছিক)</label>
+  <input id="title" placeholder="Conversation title (optional)" type="text">
+
+  <label>Conversation (paste here)</label>
+  <textarea id="conv" placeholder="এখানে আপনার চ্যাট কপি/পেস্ট করুন..."></textarea>
+
+  <label>Password (ঐচ্ছিক)</label>
+  <input id="password" placeholder="ফাঁকা রাখলে পাসওয়ার্ড থাকবে না" type="password">
+
+  <div class="row">
+    <button id="make">Create share link</button>
+    <button id="clear" class="small">Clear</button>
+    <button id="download" class="small">Download .json</button>
+    <button id="copyConv" class="small">Copy decoded</button>
+  </div>
+
+  <div class="linkbox" id="result" style="display:none">
+    <input id="sharelink" readonly>
+    <button id="copyLink" class="small">Copy</button>
+    <button id="openLink" class="small">Open</button>
+    <button id="shareAPI" class="small">Share</button>
+    <button id="genQR" class="small">QR</button>
+  </div>
+
+  <div id="qrcode" style="margin-top:12px;text-align:center;"></div>
+
+  <h3 style="margin-top:20px;color:var(--brand);">Decoded Preview</h3>
+  <pre id="preview">কোনো কনভারসেশন নেই</pre>
+
+  <footer>
+    <p><strong>নোট:</strong> এই টুল কোনো সার্ভারে ডেটা সংরক্ষণ করে না — সম্পূর্ণ নিরাপদ।</p>
+    <p>SecretGPT © Humayun Shariar Himu</p>
+  </footer>
+</div>
+
+<script>
+// same JavaScript functionality
+(function(){
+  const convEl = document.getElementById('conv');
+  const titleEl = document.getElementById('title');
+  const passEl = document.getElementById('password');
+  const makeBtn = document.getElementById('make');
+  const clearBtn = document.getElementById('clear');
+  const resultBox = document.getElementById('result');
+  const shareLinkEl = document.getElementById('sharelink');
+  const copyLinkBtn = document.getElementById('copyLink');
+  const openLinkBtn = document.getElementById('openLink');
+  const preview = document.getElementById('preview');
+  const copyConvBtn = document.getElementById('copyConv');
+  const downloadBtn = document.getElementById('download');
+  const shareAPIBtn = document.getElementById('shareAPI');
+  const genQRBtn = document.getElementById('genQR');
+  const qrcodeDiv = document.getElementById('qrcode');
+
+  function encryptAES(text, pass){ return CryptoJS.AES.encrypt(text, pass).toString(); }
+  function decryptAES(ciphertext, pass){
+    try{
+      const bytes = CryptoJS.AES.decrypt(ciphertext, pass);
+      const txt = bytes.toString(CryptoJS.enc.Utf8);
+      return txt || null;
+    }catch(e){ return null; }
+  }
+
+  function makeShareLink(obj, password){
+    let payload = JSON.stringify(obj);
+    if(password){ payload = JSON.stringify({__enc: true, data: encryptAES(payload, password)}); }
+    const compressed = LZString.compressToEncodedURIComponent(payload);
+    return location.origin + location.pathname + '#data=' + compressed;
+  }
+
+  function decodeFromHash(hash){
+    if(!hash) return null;
+    const m = hash.match(/data=([^&]+)/);
+    if(!m) return null;
+    try{
+      const compressed = m[1];
+      const payload = LZString.decompressFromEncodedURIComponent(compressed);
+      if(!payload) return null;
+      return JSON.parse(payload);
+    }catch(e){ return null; }
+  }
+
+  function showPreviewText(text){ preview.textContent = text || 'কোনো কনভারসেশন নেই'; }
+
+  makeBtn.addEventListener('click', ()=>{
+    const content = convEl.value.trim();
+    if(!content){ alert('আগে কনভারসেশন পেস্ট করুন।'); return; }
+    const obj = { title: titleEl.value.trim(), content, created_at: new Date().toISOString() };
+    const pass = passEl.value || '';
+    const link = makeShareLink(obj, pass || null);
+    shareLinkEl.value = link;
+    resultBox.style.display = 'flex';
+    showPreviewText((obj.title ? obj.title + "\n\n" : '') + obj.content);
+  });
+
+  clearBtn.addEventListener('click', ()=>{
+    convEl.value = ''; titleEl.value = ''; passEl.value = '';
+    showPreviewText('কোনো কনভারসেশন নেই');
+    resultBox.style.display = 'none'; qrcodeDiv.innerHTML = '';
+    history.replaceState(null, '', location.pathname);
+  });
+
+  copyLinkBtn.addEventListener('click', async ()=>{
+    await navigator.clipboard.writeText(shareLinkEl.value);
+    copyLinkBtn.textContent = 'Copied!';
+    setTimeout(()=> copyLinkBtn.textContent = 'Copy', 1500);
+  });
+
+  openLinkBtn.addEventListener('click', ()=> window.open(shareLinkEl.value, '_blank'));
+
+  copyConvBtn.addEventListener('click', async ()=>{
+    const obj = decodeFromHash(location.hash);
+    if(!obj){ alert('কোনো ডিকোডেবল কনভারসেশন নেই।'); return; }
+    if(obj.__enc){
+      const pw = prompt('Password দিন:');
+      if(!pw) return;
+      const dec = decryptAES(obj.data, pw);
+      if(!dec){ alert('Incorrect password.'); return; }
+      const parsed = JSON.parse(dec);
+      await navigator.clipboard.writeText(parsed.content || '');
+    } else {
+      await navigator.clipboard.writeText(obj.content || '');
+    }
+    copyConvBtn.textContent = 'Copied!';
+    setTimeout(()=> copyConvBtn.textContent = 'Copy decoded', 1500);
+  });
+
+  downloadBtn.addEventListener('click', ()=>{
+    const content = convEl.value.trim();
+    if(!content){ alert('কনভারসেশন নেই।'); return; }
+    const obj = { title: titleEl.value.trim(), content, created_at: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(obj, null, 2)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = (obj.title ? obj.title.replace(/\s+/g,'_') : 'conversation') + '.json';
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  shareAPIBtn.addEventListener('click', async ()=>{
+    const link = shareLinkEl.value || location.href;
+    if(navigator.share){
+      await navigator.share({title: titleEl.value || 'Shared Conversation', text: 'Open this conversation', url: link});
+    } else alert('Web Share API supported নয়।');
+  });
+
+  genQRBtn.addEventListener('click', ()=>{
+    const url = shareLinkEl.value || location.href;
+    if(!url){ alert('প্রথমে লিংক তৈরি করুন।'); return; }
+    qrcodeDiv.innerHTML = '';
+    new QRCode(qrcodeDiv, { text: url, width: 180, height: 180 });
+  });
+
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const obj = decodeFromHash(location.hash);
+    if(!obj) return;
+    if(obj.__enc){
+      const pw = prompt('পাসওয়ার্ড দিন:');
+      if(!pw){ showPreviewText('Password protected content.'); return; }
+      const dec = decryptAES(obj.data, pw);
+      if(!dec){ showPreviewText('ভুল পাসওয়ার্ড।'); return; }
+      const parsed = JSON.parse(dec);
+      titleEl.value = parsed.title || '';
+      convEl.value = parsed.content || '';
+      showPreviewText(parsed.content);
+    } else {
+      titleEl.value = obj.title || '';
+      convEl.value = obj.content || '';
+      showPreviewText(obj.content);
+    }
+    shareLinkEl.value = location.href;
+    resultBox.style.display = 'flex';
+  });
+})();
+</script>
+</body>
+</html>
